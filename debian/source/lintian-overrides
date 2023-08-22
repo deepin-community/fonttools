@@ -1,0 +1,5 @@
+# The files are generated from unicode-data, and license text is copied to
+# satisfy the license
+fonttools source: superfluous-file-pattern Lib/fontTools/unicodedata/Blocks.py *
+fonttools source: superfluous-file-pattern Lib/fontTools/unicodedata/ScriptExtensions.py *
+fonttools source: superfluous-file-pattern Lib/fontTools/unicodedata/Scripts.py *
