@@ -20,10 +20,15 @@ Overview
 .. code:: xml
 
     <?xml version='1.0' encoding='utf-8'?>
-    <designspace format="5.0">
+    <designspace format="5.1">
         <axes>
             <!-- define axes here -->
             <axis... />
+            <mappings>
+                <!-- define axis mappings here -->
+                <!-- New in version 5.1 -->
+                <mapping... />
+            </mappings>
         </axes>
         <labels>
             <!-- define STAT format 4 labels here -->
@@ -255,6 +260,64 @@ Example of all axis elements together
     </axes>
 
 
+``<mappings>`` element
+======================
+
+-  Define axis mappings.
+-  Child element of ``axes``
+
+
+ .. versionadded:: 5.1
+
+
+``<mapping>`` element
+---------------------
+
+-  Defines an axis mapping.
+-  Child element of ``<mappings>``
+
+
+ .. versionadded:: 5.1
+
+
+``<input>`` element
+...................
+
+-  Defines the input location of an axis mapping.
+-  Child element of ``<mapping>``
+-  Contains one or more ``<dimension>`` elements with designspace locations.
+
+ .. versionadded:: 5.1
+
+
+``<output>`` element
+...................
+
+-  Defines the output location of an axis mapping.
+-  Child element of ``<mapping>``
+-  Contains one or more ``<dimension>`` elements with designspace locations.
+
+ .. versionadded:: 5.1
+
+
+Example of all mappings elements together
+=========================================
+
+.. code:: xml
+
+    <mappings>
+        <mapping>
+            <input>
+                <dimension name="weight" xvalue="900"/>
+                <dimension name="width" xvalue="150"/>
+            </input>
+            <output>
+                <dimension name="weight" xvalue="870"/>
+            </output>
+        </mapping>
+    </mappings>
+
+
 ================================
 ``<labels>`` element (top-level)
 ================================
@@ -304,7 +367,7 @@ See: `OTSpec STAT Axis value table, format 4 <https://docs.microsoft.com/en-us/t
 ``<dimension>`` element
 .......................
 
--  Child element of ``<location>``
+-  Child element of ``<location>``, ``input``, or ``output`` elements
 
 .. rubric:: Attributes
 
@@ -375,8 +438,8 @@ glyphname pairs: the glyphs that need to be substituted. For a rule to be trigge
       See the following issues for more information:
       `fontTools#1371 <https://github.com/fonttools/fonttools/issues/1371#issuecomment-590214572>`__
       `fontTools#2050 <https://github.com/fonttools/fonttools/issues/2050#issuecomment-678691020>`__
-   -  If you want to use a different feature altogether, e.g. ``calt``,
-      use the lib key ``com.github.fonttools.varLib.featureVarsFeatureTag``
+   -  If you want to use a different feature(s) altogether, e.g. ``calt``,
+      use the lib key ``com.github.fonttools.varLib.featureVarsFeatureTag``.
 
       .. code:: xml
 
@@ -387,6 +450,9 @@ glyphname pairs: the glyphs that need to be substituted. For a rule to be trigge
                </dict>
            </lib>
 
+      This can also take a comma-separated list of feature tags, e.g. ``salt,ss01``,
+      if you wish the same rules to be applied with several features.
+
 
 
 ``<rule>`` element
@@ -394,7 +460,7 @@ glyphname pairs: the glyphs that need to be substituted. For a rule to be trigge
 
 -  Defines a named rule.
 -  Each ``<rule>`` element contains one or more ``<conditionset>`` elements.
--  **Only one** ``<conditionset>`` needs to be true to trigger the rule (logical OR).
+-  **Only one** ``<conditionset>`` needs to be true to trigger the rule (logical OR). An empty condition set is considered to be true, as in, the rule will be always-on.
 -  **All** conditions in a ``<conditionset>`` must be true to make the ``<conditionset>`` true. (logical AND)
 -  For backwards compatibility a ``<rule>`` can contain ``<condition>`` elements outside of a conditionset. These are then understood to be part of a single, implied, ``<conditionset>``. Note: these conditions should be written wrapped in a conditionset.
 -  A rule element needs to contain one or more ``<sub>`` elements in order to be compiled to a variable font.
@@ -412,7 +478,7 @@ glyphname pairs: the glyphs that need to be substituted. For a rule to be trigge
 --------------------------
 
 -  Child element of ``<rule>``
--  Contains one or more ``<condition>`` elements.
+-  Contains zero or more ``<condition>`` elements.
 
 
 ``<condition>`` element
@@ -511,7 +577,7 @@ The ``<sources>`` element contains one or more ``<source>`` elements.
    While this could be extracted from the font data itself, it can be
    more efficient to add it here.
 -  ``stylename``: optional, string. The style name of the source font.
--  ``name``: required, string. A unique name that can be used to
+-  ``name``: optional, string. A unique name that can be used to
    identify this font if it needs to be referenced elsewhere.
 -  ``filename``: required, string. A path to the source file, relative
    to the root path of this document. The path can be at the same level
@@ -542,13 +608,13 @@ element with an ``xml:lang`` attribute:
 
 Defines the coordinates of this source in the design space.
 
-.. seealso:: `Full documentation of the <location> element <location>`__
+.. seealso:: :ref:`Full documentation of the \<location\> element <location>`
 
 
 ``<dimension>`` element (source)
 ................................
 
-.. seealso:: `Full documentation of the <dimension> element <dimension>`__
+.. seealso:: :ref:`Full documentation of the \<dimension\> element <dimension>`
 
 
 ``<lib>`` element (source)
@@ -804,7 +870,7 @@ The ``<instances>`` element contains one or more ``<instance>`` elements.
 
 -  Defines a single font that can be calculated with the designspace.
 -  Child element of ``<instances>``
--  For use in Varlib the instance element really only needs the names
+-  For use in varLib the instance element really only needs the names
    and the location. The ``<glyphs>`` element is not required.
 -  MutatorMath uses the ``<glyphs>`` element to describe how certain
    glyphs need different masters, mainly to describe the effects of
@@ -829,6 +895,11 @@ The ``<instances>`` element contains one or more ``<instance>`` elements.
    with ``styleMapFamilyName``
 -  ``stylemapstylename``: string. Optional for MutatorMath. Corresponds
    with ``styleMapStyleName``
+-  ``location``: string. Optional. Describes the location of this instance,
+   taking it from the root level ``<labels>`` (STAT format 4) element with the
+   same name as the string.
+
+   .. versionadded:: 5.0
 
 
 ``<location>`` element (instance)
@@ -836,13 +907,13 @@ The ``<instances>`` element contains one or more ``<instance>`` elements.
 
 Defines the coordinates of this instance in the design space.
 
-.. seealso:: `Full documentation of the <location> element <location>`__
+.. seealso:: :ref:`Full documentation of the \<location\> element <location>`
 
 
 ``<dimension>`` element (instance)
 ..................................
 
-.. seealso:: `Full documentation of the <dimension> element <dimension>`__
+.. seealso:: :ref:`Full documentation of the \<dimension\> element <dimension>`
 
 
 ``<lib>`` element (instance)
@@ -879,7 +950,7 @@ with an ``xml:lang`` attribute:
     <stylemapfamilyname xml:lang="ja">モンセラート SemiBold</stylemapfamilyname>
 
 
-Example for varlib
+Example for varLib
 ------------------
 
 .. code:: xml
@@ -896,6 +967,30 @@ Example for varlib
         </dict>
     </lib>
     </instance>
+
+
+Here is an example using STAT format 4 labels to define the location of the
+instance directly.
+
+.. code:: xml
+
+    <?xml version='1.0' encoding='utf-8'?>
+    <designspace format="5.0">
+        <!-- ... -->
+        <labels>
+            <!-- define STAT format 4 labels here -->
+            <!-- New in version 5.0 -->
+            <label name="Extra Light">
+                <location>
+                    <dimension name="weight" uservalue="123" />
+                </location>
+            </label>
+        </labels>
+        <!-- ... -->
+        <instances>
+            <instance filename="instances/labelled.ufo" location="Extra Light" />
+        </instances>
+    </designspace>
 
 
 ``<glyphs>`` element (instance)
@@ -1005,6 +1100,8 @@ Example for MutatorMath
 The ``<lib>`` element contains arbitrary data.
 
 - Child element of ``<designspace>``, ``<variable-font>`` and ``<instance>``
+- If present, content must be an XML Property List (plist).
+  <https://en.wikipedia.org/wiki/Property_list>__
 - Contains arbitrary data about the whole document or about a specific
   variable font or instance.
 - Items in the dict need to use **reverse domain name notation**

@@ -4,6 +4,7 @@ __all__ = [
     "normalizeValue",
     "normalizeLocation",
     "supportScalar",
+    "piecewiseLinearMap",
     "VariationModel",
 ]
 
@@ -46,12 +47,12 @@ def subList(truth, lst):
 def normalizeValue(v, triple, extrapolate=False):
     """Normalizes value based on a min/default/max triple.
 
-      >>> normalizeValue(400, (100, 400, 900))
-      0.0
-      >>> normalizeValue(100, (100, 400, 900))
-      -1.0
-      >>> normalizeValue(650, (100, 400, 900))
-      0.5
+    >>> normalizeValue(400, (100, 400, 900))
+    0.0
+    >>> normalizeValue(100, (100, 400, 900))
+    -1.0
+    >>> normalizeValue(650, (100, 400, 900))
+    0.5
     """
     lower, default, upper = triple
     if not (lower <= default <= upper):
@@ -77,41 +78,41 @@ def normalizeValue(v, triple, extrapolate=False):
 def normalizeLocation(location, axes, extrapolate=False):
     """Normalizes location based on axis min/default/max values from axes.
 
-      >>> axes = {"wght": (100, 400, 900)}
-      >>> normalizeLocation({"wght": 400}, axes)
-      {'wght': 0.0}
-      >>> normalizeLocation({"wght": 100}, axes)
-      {'wght': -1.0}
-      >>> normalizeLocation({"wght": 900}, axes)
-      {'wght': 1.0}
-      >>> normalizeLocation({"wght": 650}, axes)
-      {'wght': 0.5}
-      >>> normalizeLocation({"wght": 1000}, axes)
-      {'wght': 1.0}
-      >>> normalizeLocation({"wght": 0}, axes)
-      {'wght': -1.0}
-      >>> axes = {"wght": (0, 0, 1000)}
-      >>> normalizeLocation({"wght": 0}, axes)
-      {'wght': 0.0}
-      >>> normalizeLocation({"wght": -1}, axes)
-      {'wght': 0.0}
-      >>> normalizeLocation({"wght": 1000}, axes)
-      {'wght': 1.0}
-      >>> normalizeLocation({"wght": 500}, axes)
-      {'wght': 0.5}
-      >>> normalizeLocation({"wght": 1001}, axes)
-      {'wght': 1.0}
-      >>> axes = {"wght": (0, 1000, 1000)}
-      >>> normalizeLocation({"wght": 0}, axes)
-      {'wght': -1.0}
-      >>> normalizeLocation({"wght": -1}, axes)
-      {'wght': -1.0}
-      >>> normalizeLocation({"wght": 500}, axes)
-      {'wght': -0.5}
-      >>> normalizeLocation({"wght": 1000}, axes)
-      {'wght': 0.0}
-      >>> normalizeLocation({"wght": 1001}, axes)
-      {'wght': 0.0}
+    >>> axes = {"wght": (100, 400, 900)}
+    >>> normalizeLocation({"wght": 400}, axes)
+    {'wght': 0.0}
+    >>> normalizeLocation({"wght": 100}, axes)
+    {'wght': -1.0}
+    >>> normalizeLocation({"wght": 900}, axes)
+    {'wght': 1.0}
+    >>> normalizeLocation({"wght": 650}, axes)
+    {'wght': 0.5}
+    >>> normalizeLocation({"wght": 1000}, axes)
+    {'wght': 1.0}
+    >>> normalizeLocation({"wght": 0}, axes)
+    {'wght': -1.0}
+    >>> axes = {"wght": (0, 0, 1000)}
+    >>> normalizeLocation({"wght": 0}, axes)
+    {'wght': 0.0}
+    >>> normalizeLocation({"wght": -1}, axes)
+    {'wght': 0.0}
+    >>> normalizeLocation({"wght": 1000}, axes)
+    {'wght': 1.0}
+    >>> normalizeLocation({"wght": 500}, axes)
+    {'wght': 0.5}
+    >>> normalizeLocation({"wght": 1001}, axes)
+    {'wght': 1.0}
+    >>> axes = {"wght": (0, 1000, 1000)}
+    >>> normalizeLocation({"wght": 0}, axes)
+    {'wght': -1.0}
+    >>> normalizeLocation({"wght": -1}, axes)
+    {'wght': -1.0}
+    >>> normalizeLocation({"wght": 500}, axes)
+    {'wght': -0.5}
+    >>> normalizeLocation({"wght": 1000}, axes)
+    {'wght': 0.0}
+    >>> normalizeLocation({"wght": 1001}, axes)
+    {'wght': 0.0}
     """
     out = {}
     for tag, triple in axes.items():
@@ -248,7 +249,6 @@ class VariationModel(object):
     """
 
     def __init__(self, locations, axisOrder=None, extrapolate=False):
-
         if len(set(tuple(sorted(l.items())) for l in locations)) != len(locations):
             raise VariationModelError("Locations must be unique.")
 
@@ -365,12 +365,12 @@ class VariationModel(object):
             # Walk over previous masters now
             for prev_region in regions[:i]:
                 # Master with extra axes do not participte
-                if not set(prev_region.keys()).issubset(locAxes):
+                if set(prev_region.keys()) != locAxes:
                     continue
                 # If it's NOT in the current box, it does not participate
                 relevant = True
                 for axis, (lower, peak, upper) in region.items():
-                    if axis not in prev_region or not (
+                    if not (
                         prev_region[axis][1] == peak
                         or lower < prev_region[axis][1] < upper
                     ):

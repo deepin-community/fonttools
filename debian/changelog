@@ -1,3 +1,12 @@
+fonttools (4.46.0-1) unstable; urgency=medium
+
+  * Team upload
+  * New upstream release
+    - Fixes Python 3.12 syntax warning (Closes: #1057535)
+  * Bump dependencies
+
+ -- Jeremy Bícha <jbicha@ubuntu.com>  Tue, 05 Dec 2023 16:48:27 -0500
+
 fonttools (4.38.0-1) unstable; urgency=medium
 
   * Team upload.
