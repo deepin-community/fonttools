@@ -2,8 +2,15 @@ import io
 import os
 import re
 import random
+import tempfile
 from fontTools.feaLib.builder import addOpenTypeFeaturesFromString
-from fontTools.ttLib import TTFont, TTLibError, newTable, registerCustomTableClass, unregisterCustomTableClass
+from fontTools.ttLib import (
+    TTFont,
+    TTLibError,
+    newTable,
+    registerCustomTableClass,
+    unregisterCustomTableClass,
+)
 from fontTools.ttLib.standardGlyphOrder import standardGlyphOrder
 from fontTools.ttLib.tables.DefaultTable import DefaultTable
 from fontTools.ttLib.tables._c_m_a_p import CmapSubtable
@@ -14,7 +21,6 @@ DATA_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)), "data")
 
 
 class CustomTableClass(DefaultTable):
-
     def decompile(self, data, ttFont):
         self.numbers = list(data)
 
@@ -171,7 +177,7 @@ def test_ensureDecompiled(lazy):
         feature dist {
             pos period period -30;
         } dist;
-        """
+        """,
     )
     # also add an additional cmap subtable that will be lazily-loaded
     cm = CmapSubtable.newSubtable(14)
@@ -179,7 +185,7 @@ def test_ensureDecompiled(lazy):
     cm.platEncID = 5
     cm.language = 0
     cm.cmap = {}
-    cm.uvsDict = {0xFE00: [(0x002e, None)]}
+    cm.uvsDict = {0xFE00: [(0x002E, None)]}
     font["cmap"].tables.append(cm)
 
     # save and reload, potentially lazily
@@ -257,3 +263,58 @@ def test_font_normalizeLocation_no_VF():
     ttf = TTFont()
     with pytest.raises(TTLibError, match="Not a variable font"):
         ttf.normalizeLocation({})
+
+
+def test_getGlyphID():
+    font = TTFont()
+    font.importXML(os.path.join(DATA_DIR, "TestTTF-Regular.ttx"))
+
+    assert font.getGlyphID("space") == 3
+    assert font.getGlyphID("glyph12345") == 12345  # virtual glyph
+    with pytest.raises(KeyError):
+        font.getGlyphID("non_existent")
+    with pytest.raises(KeyError):
+        font.getGlyphID("glyph_prefix_but_invalid_id")
+
+
+def test_spooled_tempfile_may_not_have_attribute_seekable():
+    # SpooledTemporaryFile only got a seekable attribute on Python 3.11
+    # https://github.com/fonttools/fonttools/issues/3052
+    font = TTFont()
+    font.importXML(os.path.join(DATA_DIR, "TestTTF-Regular.ttx"))
+    tmp = tempfile.SpooledTemporaryFile()
+    font.save(tmp)
+    # this should not fail
+    _ = TTFont(tmp)
+
+
+def test_unseekable_file_lazy_loading_fails():
+    class NonSeekableFile:
+        def __init__(self):
+            self.file = io.BytesIO()
+
+        def read(self, size):
+            return self.file.read(size)
+
+        def seekable(self):
+            return False
+
+    f = NonSeekableFile()
+    with pytest.raises(TTLibError, match="Input file must be seekable when lazy=True"):
+        TTFont(f, lazy=True)
+
+
+def test_unsupported_seek_operation_lazy_loading_fails():
+    class UnsupportedSeekFile:
+        def __init__(self):
+            self.file = io.BytesIO()
+
+        def read(self, size):
+            return self.file.read(size)
+
+        def seek(self, offset):
+            raise io.UnsupportedOperation("Unsupported seek operation")
+
+    f = UnsupportedSeekFile()
+    with pytest.raises(TTLibError, match="Input file must be seekable when lazy=True"):
+        TTFont(f, lazy=True)

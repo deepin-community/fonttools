@@ -81,7 +81,9 @@ def test_split(datadir, tmpdir, test_ds, expected_interpolable_spaces):
         vfs = list(splitVariableFonts(sub_doc))
         assert expected_vf_names == set(vf[0] for vf in vfs)
 
-        loc_str = "_".join(f"{name}_{value}"for name, value in sorted(location.items()))
+        loc_str = "_".join(
+            f"{name}_{value}" for name, value in sorted(location.items())
+        )
         data_out = datadir / "split_output" / f"{temp_in.stem}_{loc_str}.designspace"
         temp_out = Path(tmpdir) / "out" / f"{temp_in.stem}_{loc_str}.designspace"
         temp_out.parent.mkdir(exist_ok=True)
@@ -108,8 +110,6 @@ def test_split(datadir, tmpdir, test_ds, expected_interpolable_spaces):
                 assert data_out.read_text(encoding="utf-8") == temp_out.read_text(
                     encoding="utf-8"
                 )
-
-
 
 
 @pytest.mark.parametrize(
@@ -144,7 +144,9 @@ def test_convert5to4(datadir, tmpdir, test_ds, expected_vfs):
 
     assert variable_fonts.keys() == expected_vfs
     for vf_name, vf in variable_fonts.items():
-        data_out = (datadir / "convert5to4_output" / vf_name).with_suffix(".designspace")
+        data_out = (datadir / "convert5to4_output" / vf_name).with_suffix(
+            ".designspace"
+        )
         temp_out = (Path(tmpdir) / "out" / vf_name).with_suffix(".designspace")
         temp_out.parent.mkdir(exist_ok=True)
         vf.write(temp_out)
@@ -209,3 +211,19 @@ def test_optional_min_max_internal(condition, expected_set: ConditionSet):
     """Check that split's internal helper functions produce the correct output
     for conditions that are partially unbounded."""
     assert _conditionSetFrom([condition]) == expected_set
+
+
+def test_avar2(datadir):
+    ds = DesignSpaceDocument()
+    ds.read(datadir / "test_avar2.designspace")
+    _, subDoc = next(splitInterpolable(ds))
+    assert len(subDoc.axisMappings) == 1
+
+    subDocs = list(splitVariableFonts(ds))
+    assert len(subDocs) == 5
+    for i, (_, subDoc) in enumerate(subDocs):
+        # Only the first one should have a mapping, according to the document
+        if i == 0:
+            assert len(subDoc.axisMappings) == 1
+        else:
+            assert len(subDoc.axisMappings) == 0
