@@ -1,3 +1,9 @@
+fonttools (4.46.0-1deepin1) unstable; urgency=medium
+
+  * Fix CVE-2025-66034: path traversal vulnerability in varLib
+
+ -- deepin-ci-robot <packages@deepin.org>  Fri, 17 Apr 2026 00:23:07 +0800
+
 fonttools (4.46.0-1) unstable; urgency=medium
 
   * Team upload
