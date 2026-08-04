@@ -1,0 +1,40 @@
+From: Boyuan Yang <byang@debian.org>
+Date: Sat, 19 Oct 2024 21:13:28 -0400
+Subject: keep doctest compatible with Unicode 15.1
+
+Revert changes made in
+https://github.com/fonttools/fonttools/commit/10a61ef7de0f5c99f37584840641ee6c62dc74bd
+before Debian packages support for unicode 16.0.
+
+Forwarded: not-needed
+---
+ Lib/fontTools/unicodedata/__init__.py | 2 +-
+ Tests/unicodedata_test.py             | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/Lib/fontTools/unicodedata/__init__.py b/Lib/fontTools/unicodedata/__init__.py
+index edae44e..06eb461 100644
+--- a/Lib/fontTools/unicodedata/__init__.py
++++ b/Lib/fontTools/unicodedata/__init__.py
+@@ -77,7 +77,7 @@ def script_extension(char):
+ 
+     >>> script_extension("a") == {'Latn'}
+     True
+-    >>> script_extension(chr(0x060C)) == {'Nkoo', 'Arab', 'Rohg', 'Thaa', 'Syrc', 'Gara', 'Yezi'}
++    >>> script_extension(chr(0x060C)) == {'Rohg', 'Syrc', 'Yezi', 'Arab', 'Thaa', 'Nkoo'}
+     True
+     >>> script_extension(chr(0x10FFFF)) == {'Zzzz'}
+     True
+diff --git a/Tests/unicodedata_test.py b/Tests/unicodedata_test.py
+index 12cbd80..ac3d205 100644
+--- a/Tests/unicodedata_test.py
++++ b/Tests/unicodedata_test.py
+@@ -182,7 +182,7 @@ def test_script_extension():
+         "Taml",
+         "Telu",
+         "Tirh",
+-        "Onao",
++#        "Onao",
+     }
+ 
+ 

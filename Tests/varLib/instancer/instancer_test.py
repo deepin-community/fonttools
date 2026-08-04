@@ -63,6 +63,88 @@ def _get_coordinates(varfont, glyphname):
     )
 
 
+class InstantiateCFF2Test(object):
+    @pytest.mark.parametrize(
+        "location, expected",
+        [
+            (
+                {},
+                [
+                    44,
+                    256,
+                    6,
+                    -29,
+                    2,
+                    "blend",
+                    "rmoveto",
+                    239,
+                    35,
+                    -239,
+                    44,
+                    90,
+                    -44,
+                    3,
+                    "blend",
+                    "hlineto",
+                ],
+            ),
+            ({"wght": 0}, [44, 256, "rmoveto", 239, 35, -239, "hlineto"]),
+            ({"wght": 0.5}, [47, 242, "rmoveto", 261, 80, -261, "hlineto"]),
+            ({"wght": 1}, [50, 227, "rmoveto", 283, 125, -283, "hlineto"]),
+        ],
+    )
+    def test_pin_and_drop_axis(self, varfont, location, expected):
+
+        varfont = ttLib.TTFont()
+        varfont.importXML(os.path.join(TESTDATA, "CFF2Instancer-VF-1.ttx"))
+
+        location = instancer.NormalizedAxisLimits(location)
+
+        instancer.instantiateCFF2(varfont, location)
+        instancer.instantiateHVAR(varfont, location)
+
+        program = varfont["CFF2"].cff.topDictIndex[0].CharStrings.values()[1].program
+        assert program == expected
+
+    @pytest.mark.parametrize(
+        "source_ttx, expected_ttx",
+        [
+            ("CFF2Instancer-VF-1.ttx", "CFF2Instancer-VF-1-instance-400.ttx"),
+            ("CFF2Instancer-VF-2.ttx", "CFF2Instancer-VF-2-instance-400.ttx"),
+            ("CFF2Instancer-VF-3.ttx", "CFF2Instancer-VF-3-instance-400.ttx"),
+        ],
+    )
+    def test_full_instance(self, varfont, source_ttx, expected_ttx):
+        varfont = ttLib.TTFont()
+        varfont.importXML(os.path.join(TESTDATA, source_ttx))
+        s = BytesIO()
+        varfont.save(s)
+        s.seek(0)
+        varfont = ttLib.TTFont(s)
+
+        instance = instancer.instantiateVariableFont(varfont, {"wght": 400})
+        s = BytesIO()
+        instance.save(s)
+        s.seek(0)
+        instance = ttLib.TTFont(s)
+
+        s = StringIO()
+        instance.saveXML(s)
+        actual = stripVariableItemsFromTTX(s.getvalue())
+
+        expected = ttLib.TTFont()
+        expected.importXML(os.path.join(TESTDATA, "test_results", expected_ttx))
+        s = BytesIO()
+        expected.save(s)
+        s.seek(0)
+        expected = ttLib.TTFont(s)
+        s = StringIO()
+        expected.saveXML(s)
+        expected = stripVariableItemsFromTTX(s.getvalue())
+
+        assert actual == expected
+
+
 class InstantiateGvarTest(object):
     @pytest.mark.parametrize("glyph_name", ["hyphen"])
     @pytest.mark.parametrize(
@@ -1617,23 +1699,33 @@ class InstantiateVariableFontTest(object):
 
     def test_varComposite(self):
         input_path = os.path.join(
-            TESTDATA, "..", "..", "..", "ttLib", "data", "varc-ac00-ac01.ttf"
+            TESTDATA, "..", "..", "..", "ttLib", "data", "varc-6868.ttf"
         )
         varfont = ttLib.TTFont(input_path)
 
         location = {"wght": 600}
 
-        instance = instancer.instantiateVariableFont(
-            varfont,
-            location,
-        )
+        # We currently do not allow this either; although in theory
+        # it should be possible.
+        with pytest.raises(
+            NotImplementedError,
+            match="is not supported.",
+        ):
+            instance = instancer.instantiateVariableFont(
+                varfont,
+                location,
+            )
 
         location = {"0000": 0.5}
 
-        instance = instancer.instantiateVariableFont(
-            varfont,
-            location,
-        )
+        with pytest.raises(
+            NotImplementedError,
+            match="is not supported.",
+        ):
+            instance = instancer.instantiateVariableFont(
+                varfont,
+                location,
+            )
 
 
 def _conditionSetAsDict(conditionSet, axisOrder):
@@ -1986,7 +2078,10 @@ class LimitTupleVariationAxisRangesTest:
                 TupleVariation({"wght": (0.0, 0.5, 1.0)}, [100, 100]),
                 "wght",
                 0.6,
-                [TupleVariation({"wght": (0.0, 0.833334, 1.666667)}, [100, 100])],
+                [
+                    TupleVariation({"wght": (0.0, 0.833334, 1.0)}, [100, 100]),
+                    TupleVariation({"wght": (0.833334, 1.0, 1.0)}, [80, 80]),
+                ],
             ),
             (
                 TupleVariation({"wght": (0.0, 0.2, 1.0)}, [100, 100]),
@@ -2001,13 +2096,29 @@ class LimitTupleVariationAxisRangesTest:
                 TupleVariation({"wght": (0.0, 0.2, 1.0)}, [100, 100]),
                 "wght",
                 0.5,
-                [TupleVariation({"wght": (0.0, 0.4, 1.99994)}, [100, 100])],
+                [
+                    TupleVariation({"wght": (0.0, 0.4, 1)}, [100, 100]),
+                    TupleVariation({"wght": (0.4, 1, 1)}, [62.5, 62.5]),
+                ],
             ),
             (
                 TupleVariation({"wght": (0.5, 0.5, 1.0)}, [100, 100]),
                 "wght",
                 0.5,
                 [TupleVariation({"wght": (1.0, 1.0, 1.0)}, [100, 100])],
+            ),
+            # test case from https://github.com/fonttools/fonttools/issues/3453
+            (
+                TupleVariation(
+                    {
+                        "wght": (0.0, 1.0, 1.0),
+                        "ital": (0.0, 0.0, 1.0),  # no-op axis gets dropped
+                    },
+                    [100, 100],
+                ),
+                "ital",
+                0.0,
+                [TupleVariation({"wght": (0.0, 1.0, 1.0)}, [100, 100])],
             ),
         ],
     )
@@ -2065,7 +2176,10 @@ class LimitTupleVariationAxisRangesTest:
                 TupleVariation({"wght": (-1.0, -0.5, 0.0)}, [100, 100]),
                 "wght",
                 -0.6,
-                [TupleVariation({"wght": (-1.666667, -0.833334, 0.0)}, [100, 100])],
+                [
+                    TupleVariation({"wght": (-1.0, -0.833334, 0.0)}, [100, 100]),
+                    TupleVariation({"wght": (-1.0, -1.0, -0.833334)}, [80, 80]),
+                ],
             ),
             (
                 TupleVariation({"wght": (-1.0, -0.2, 0.0)}, [100, 100]),
@@ -2080,7 +2194,10 @@ class LimitTupleVariationAxisRangesTest:
                 TupleVariation({"wght": (-1.0, -0.2, 0.0)}, [100, 100]),
                 "wght",
                 -0.5,
-                [TupleVariation({"wght": (-2.0, -0.4, 0.0)}, [100, 100])],
+                [
+                    TupleVariation({"wght": (-1.0, -0.4, 0.0)}, [100, 100]),
+                    TupleVariation({"wght": (-1.0, -1.0, -0.4)}, [62.5, 62.5]),
+                ],
             ),
             (
                 TupleVariation({"wght": (-1.0, -0.5, -0.5)}, [100, 100]),
@@ -2273,3 +2390,41 @@ def test_set_ribbi_bits():
                 assert name_id_2 == "Italic", location
                 assert mac_style == 0b10, location
                 assert fs_selection == 0b0000001, location
+
+
+def test_rounds_before_iup():
+    """Regression test for fonttools/fonttools#3634, with TTX based on
+    reproduction process there."""
+
+    varfont = ttLib.TTFont()
+    varfont.importXML(os.path.join(TESTDATA, "3634-VF.ttx"))
+
+    # Instantiate at a new default position, sufficient to cause differences
+    # when unrounded but not when rounded.
+    partial = instancer.instantiateVariableFont(varfont, {"wght": (401, 401, 900)})
+
+    # Save and reload actual result to recalculate bounding box values, etc.
+    bytes_out = BytesIO()
+    partial.save(bytes_out)
+    bytes_out.seek(0)
+    partial = ttLib.TTFont(bytes_out)
+
+    # Load expected result, then save and reload to normalise TTX output.
+    expected = ttLib.TTFont()
+    expected.importXML(os.path.join(TESTDATA, "test_results", "3634-VF-partial.ttx"))
+
+    bytes_out = BytesIO()
+    expected.save(bytes_out)
+    bytes_out.seek(0)
+    expected = ttLib.TTFont(bytes_out)
+
+    # Serialise actual and expected to TTX strings, and compare.
+    string_out = StringIO()
+    partial.saveXML(string_out)
+    partial_ttx = stripVariableItemsFromTTX(string_out.getvalue())
+
+    string_out = StringIO()
+    expected.saveXML(string_out)
+    expected_ttx = stripVariableItemsFromTTX(string_out.getvalue())
+
+    assert partial_ttx == expected_ttx
