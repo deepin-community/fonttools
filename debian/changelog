@@ -1,3 +1,13 @@
+fonttools (4.51.0-1) unstable; urgency=medium
+
+  * Team upload.
+  * New upstream release.
+  * debian/gbp.conf: Use "ignore-branch = True".
+  * debian/control:
+    + Move main package description to the source package.
+
+ -- Boyuan Yang <byang@debian.org>  Sat, 06 Apr 2024 19:57:57 -0400
+
 fonttools (4.46.0-1) unstable; urgency=medium
 
   * Team upload
