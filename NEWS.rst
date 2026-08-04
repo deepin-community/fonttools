@@ -1,3 +1,69 @@
+4.51.0 (released 2024-04-05)
+----------------------------
+
+- [ttLib] Optimization on loading aux fields (#3464).
+- [ttFont] Add reorderGlyphs (#3468).
+
+4.50.0 (released 2024-03-15)
+----------------------------
+
+- [pens] Added decomposing filter pens that draw components as regular contours (#3460).
+- [instancer] Drop explicit no-op axes from TupleVariations (#3457).
+- [cu2qu/ufo] Return set of modified glyph names from fonts_to_quadratic (#3456).
+
+4.49.0 (released 2024-02-15)
+----------------------------
+
+- [otlLib] Add API for building ``MATH`` table (#3446)
+
+4.48.1 (released 2024-02-06)
+----------------------------
+
+- Fixed uploading wheels to PyPI, no code changes since v4.48.0.
+
+4.48.0 (released 2024-02-06)
+----------------------------
+
+- [varLib] Do not log when there are no OTL tables to be merged.
+- [setup.py] Do not restrict lxml<5 any more, tests pass just fine with lxml>=5.
+- [feaLib] Remove glyph and class names length restrictions in FEA (#3424).
+- [roundingPens] Added ``transformRoundFunc`` parameter to the rounding pens to allow
+  for custom rounding of the components' transforms (#3426).
+- [feaLib] Keep declaration order of ligature components within a ligature set, instead
+  of sorting by glyph name (#3429).
+- [feaLib] Fixed ordering of alternates in ``aalt`` lookups, following the declaration
+  order of feature references within the ``aalt`` feature block (#3430).
+- [varLib.instancer] Fixed a bug in the instancer's IUP optimization (#3432).
+- [sbix] Support sbix glyphs with new graphicType "flip" (#3433).
+- [svgPathPen] Added ``--glyphs`` option to dump the SVG paths for the named glyphs
+  in the font (0572f78).
+- [designspaceLib] Added "description" attribute to ``<mappings>`` and ``<mapping>``
+  elements, and allow multiple ``<mappings>`` elements to group ``<mapping>`` elements
+  that are logically related (#3435, #3437).
+- [otlLib] Correctly choose the most compact GSUB contextual lookup format (#3439).
+
+4.47.2 (released 2024-01-11)
+----------------------------
+
+Minor release to fix uploading wheels to PyPI.
+
+4.47.1 (released 2024-01-11)
+----------------------------
+
+- [merge] Improve help message and add standard command line options (#3408)
+- [otlLib] Pass ``ttFont`` to ``name.addName`` in ``buildStatTable`` (#3406)
+- [featureVars] Re-use ``FeatureVariationRecord``'s when possible (#3413)
+
+4.47.0 (released 2023-12-18)
+----------------------------
+
+- [varLib.models] New API for VariationModel: ``getMasterScalars`` and
+  ``interpolateFromValuesAndScalars``.
+- [varLib.interpolatable] Various bugfixes and rendering improvements. In particular,
+  add a Summary page in the front, and an Index and Table-of-Contents in the back.
+  Change the page size to Letter.
+- [Docs/designspaceLib] Defined a new ``public.fontInfo`` lib key, not used anywhere yet (#3358).
+
 4.46.0 (released 2023-12-02)
 ----------------------------
 
@@ -298,10 +364,10 @@
 ----------------------------
 
 - [varLib.instancer] Added support for L4 instancing, i.e. moving the default value of
-  an axis while keeping it variable. Thanks Behdad! (#2728, #2861).  
+  an axis while keeping it variable. Thanks Behdad! (#2728, #2861).
   It's now also possible to restrict an axis min/max values beyond the current default
   value, e.g. a font wght has min=100, def=400, max=900 and you want a partial VF that
-  only varies between 500 and 700, you can now do that.  
+  only varies between 500 and 700, you can now do that.
   You can either specify two min/max values (wght=500:700), and the new default will be
   set to either the minimum or maximum, depending on which one is closer to the current
   default (e.g. 500 in this case). Or you can specify three values (e.g. wght=500:600:700)
@@ -309,7 +375,7 @@
 - [otlLib/featureVars] Set a few Count values so one doesn't need to compile the font
   to update them (#2860).
 - [varLib.models] Make extrapolation work for 2-master models as well where one master
-  is at the default location (#2843, #2846).  
+  is at the default location (#2843, #2846).
   Add optional extrapolate=False to normalizeLocation() (#2847, #2849).
 - [varLib.cff] Fixed sub-optimal packing of CFF2 deltas by no longer rounding them to
   integer (#2838).
