@@ -1,14 +1,60 @@
+from fontTools.ttLib.ttGlyphSet import LerpGlyphSet
 from fontTools.pens.basePen import AbstractPen, BasePen, DecomposingPen
 from fontTools.pens.pointPen import AbstractPointPen, SegmentToPointPen
 from fontTools.pens.recordingPen import RecordingPen, DecomposingRecordingPen
 from fontTools.misc.transform import Transform
 from collections import defaultdict, deque
 from math import sqrt, copysign, atan2, pi
+from enum import Enum
 import itertools
 
 import logging
 
 log = logging.getLogger("fontTools.varLib.interpolatable")
+
+
+class InterpolatableProblem:
+    NOTHING = "nothing"
+    MISSING = "missing"
+    OPEN_PATH = "open_path"
+    PATH_COUNT = "path_count"
+    NODE_COUNT = "node_count"
+    NODE_INCOMPATIBILITY = "node_incompatibility"
+    CONTOUR_ORDER = "contour_order"
+    WRONG_START_POINT = "wrong_start_point"
+    KINK = "kink"
+    UNDERWEIGHT = "underweight"
+    OVERWEIGHT = "overweight"
+
+    severity = {
+        MISSING: 1,
+        OPEN_PATH: 2,
+        PATH_COUNT: 3,
+        NODE_COUNT: 4,
+        NODE_INCOMPATIBILITY: 5,
+        CONTOUR_ORDER: 6,
+        WRONG_START_POINT: 7,
+        KINK: 8,
+        UNDERWEIGHT: 9,
+        OVERWEIGHT: 10,
+        NOTHING: 11,
+    }
+
+
+def sort_problems(problems):
+    """Sort problems by severity, then by glyph name, then by problem message."""
+    return dict(
+        sorted(
+            problems.items(),
+            key=lambda _: -min(
+                (
+                    (InterpolatableProblem.severity[p["type"]] + p.get("tolerance", 0))
+                    for p in _[1]
+                ),
+            ),
+            reverse=True,
+        )
+    )
 
 
 def rot_list(l, k):
@@ -97,6 +143,9 @@ def min_cost_perfect_bipartite_matching_scipy(G):
     n = len(G)
     rows, cols = linear_sum_assignment(G)
     assert (rows == list(range(n))).all()
+    # Convert numpy array and integer to Python types,
+    # to ensure that this is JSON-serializable.
+    cols = list(int(e) for e in cols)
     return list(cols), matching_cost(G, cols)
 
 
@@ -244,17 +293,19 @@ def add_isomorphisms(points, isomorphisms, reverse):
             )
 
 
-def find_parents_and_order(glyphsets, locations):
+def find_parents_and_order(glyphsets, locations, *, discrete_axes=set()):
     parents = [None] + list(range(len(glyphsets) - 1))
     order = list(range(len(glyphsets)))
     if locations:
         # Order base master first
-        bases = (i for i, l in enumerate(locations) if all(v == 0 for v in l.values()))
+        bases = [
+            i
+            for i, l in enumerate(locations)
+            if all(v == 0 for k, v in l.items() if k not in discrete_axes)
+        ]
         if bases:
-            base = next(bases)
-            logging.info("Base master index %s, location %s", base, locations[base])
+            logging.info("Found %s base masters: %s", len(bases), bases)
         else:
-            base = 0
             logging.warning("No base master location found")
 
         # Form a minimum spanning tree of the locations
@@ -268,9 +319,17 @@ def find_parents_and_order(glyphsets, locations):
             axes = sorted(axes)
             vectors = [tuple(l.get(k, 0) for k in axes) for l in locations]
             for i, j in itertools.combinations(range(len(locations)), 2):
+                i_discrete_location = {
+                    k: v for k, v in zip(axes, vectors[i]) if k in discrete_axes
+                }
+                j_discrete_location = {
+                    k: v for k, v in zip(axes, vectors[j]) if k in discrete_axes
+                }
+                if i_discrete_location != j_discrete_location:
+                    continue
                 graph[i][j] = vdiff_hypot2(vectors[i], vectors[j])
 
-            tree = minimum_spanning_tree(graph)
+            tree = minimum_spanning_tree(graph, overwrite=True)
             rows, cols = tree.nonzero()
             graph = defaultdict(set)
             for row, col in zip(rows, cols):
@@ -281,7 +340,7 @@ def find_parents_and_order(glyphsets, locations):
             parents = [None] * len(locations)
             order = []
             visited = set()
-            queue = deque([base])
+            queue = deque(bases)
             while queue:
                 i = queue.popleft()
                 visited.add(i)
@@ -290,6 +349,9 @@ def find_parents_and_order(glyphsets, locations):
                     if j not in visited:
                         parents[j] = i
                         queue.append(j)
+            assert len(order) == len(
+                parents
+            ), "Not all masters are reachable; report an issue"
 
         except ImportError:
             pass
@@ -332,52 +394,3 @@ def transform_from_stats(stats, inverse=False):
         trans = trans.translate(stats.meanX, stats.meanY)
 
     return trans
-
-
-class LerpGlyphSet:
-    def __init__(self, glyphset1, glyphset2, factor=0.5):
-        self.glyphset1 = glyphset1
-        self.glyphset2 = glyphset2
-        self.factor = factor
-
-    def __getitem__(self, glyphname):
-        return LerpGlyph(glyphname, self)
-
-
-class LerpGlyph:
-    def __init__(self, glyphname, glyphset):
-        self.glyphset = glyphset
-        self.glyphname = glyphname
-
-    def draw(self, pen):
-        recording1 = DecomposingRecordingPen(self.glyphset.glyphset1)
-        self.glyphset.glyphset1[self.glyphname].draw(recording1)
-        recording2 = DecomposingRecordingPen(self.glyphset.glyphset2)
-        self.glyphset.glyphset2[self.glyphname].draw(recording2)
-
-        factor = self.glyphset.factor
-        for (op1, args1), (op2, args2) in zip(recording1.value, recording2.value):
-            if op1 != op2:
-                raise ValueError("Mismatching operations: %s, %s" % (op1, op2))
-            mid_args = [
-                (x1 + (x2 - x1) * factor, y1 + (y2 - y1) * factor)
-                for (x1, y1), (x2, y2) in zip(args1, args2)
-            ]
-            getattr(pen, op1)(*mid_args)
-
-
-def lerp_recordings(recording1, recording2, factor=0.5):
-    pen = RecordingPen()
-    value = pen.value
-    for (op1, args1), (op2, args2) in zip(recording1.value, recording2.value):
-        if op1 != op2:
-            raise ValueError("Mismatched operations: %s, %s" % (op1, op2))
-        if op1 == "addComponent":
-            mid_args = args1  # XXX Interpolate transformation?
-        else:
-            mid_args = [
-                (x1 + (x2 - x1) * factor, y1 + (y2 - y1) * factor)
-                for (x1, y1), (x2, y2) in zip(args1, args2)
-            ]
-        value.append((op1, mid_args))
-    return pen

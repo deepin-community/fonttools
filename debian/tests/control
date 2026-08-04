@@ -1,5 +1,8 @@
 Test-Command: pytest-3
-Depends: python3-all,
-	 fonttools,
-         python3-fonttools,
-         python3-pytest
+Depends:
+ fonttools,
+ python3-all,
+ python3-fonttools,
+ python3-pytest,
+ python3-glyphslib (>= 6.9.2),
+ python3-ufo2ft (>= 3.3.1),

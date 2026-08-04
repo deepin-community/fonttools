@@ -1,0 +1,29 @@
+From: =?utf-8?q?Jeremy_B=C3=ADcha?= <jeremy.bicha@canonical.com>
+Date: Wed, 20 Nov 2024 14:37:40 -0500
+Subject: Skip test on i386 that fails because of excess precision
+
+---
+ Tests/varLib/interpolatable_test.py | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/Tests/varLib/interpolatable_test.py b/Tests/varLib/interpolatable_test.py
+index f2acc79..053e2ce 100644
+--- a/Tests/varLib/interpolatable_test.py
++++ b/Tests/varLib/interpolatable_test.py
+@@ -1,6 +1,7 @@
+ from fontTools.ttLib import TTFont
+ from fontTools.varLib.interpolatable import main as interpolatable_main
+ import os
++import platform
+ import shutil
+ import sys
+ import tempfile
+@@ -95,7 +96,7 @@ class InterpolatableTest(unittest.TestCase):
+         self.assertIsNone(interpolatable_main(otf_paths))
+ 
+     @pytest.mark.skipif(
+-        sys.version_info[:2] == (3, 8), reason="Fails on Python 3.8 for unknown reasons"
++        platform.machine().startswith('i686'), reason="excess precision https://github.com/fonttools/fonttools/issues/3696 "
+     )
+     def test_interpolatable_cff2(self):
+         suffix = ".otf"

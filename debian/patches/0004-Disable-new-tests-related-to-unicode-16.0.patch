@@ -1,0 +1,76 @@
+From: Boyuan Yang <byang@debian.org>
+Date: Sat, 5 Apr 2025 15:49:55 -0400
+Subject: Disable new tests related to unicode 16.0
+
+Do not run tests introduced by
+https://github.com/fonttools/fonttools/commit/b26271cc4dcc5256a2181d8307dde9a2b3cd45d5
+before using Unicode 16.0.
+---
+ Tests/unicodedata_test.py | 54 +++++++++++++++++++++++------------------------
+ 1 file changed, 27 insertions(+), 27 deletions(-)
+
+diff --git a/Tests/unicodedata_test.py b/Tests/unicodedata_test.py
+index 6a3caec..eb01ce4 100644
+--- a/Tests/unicodedata_test.py
++++ b/Tests/unicodedata_test.py
+@@ -155,33 +155,33 @@ def test_script():
+ 
+ 
+ def test_script_extension():
+-    assert unicodedata.script_extension("\u00B7") == {
+-        "Avst",
+-        "Cari",
+-        "Copt",
+-        "Dupl",
+-        "Elba",
+-        "Geor",
+-        "Glag",
+-        "Gong",
+-        "Goth",
+-        "Grek",
+-        "Hani",
+-        "Latn",
+-        "Lydi",
+-        "Mahj",
+-        "Perm",
+-        "Shaw",
+-    }
+-    assert unicodedata.script_extension("\u02BC") == {
+-        "Beng",
+-        "Cyrl",
+-        "Deva",
+-        "Latn",
+-        "Lisu",
+-        "Thai",
+-        "Toto",
+-    }
++#    assert unicodedata.script_extension("\u00B7") == {
++#        "Avst",
++#        "Cari",
++#        "Copt",
++#        "Dupl",
++#        "Elba",
++#        "Geor",
++#        "Glag",
++#        "Gong",
++#        "Goth",
++#        "Grek",
++#        "Hani",
++#        "Latn",
++#        "Lydi",
++#        "Mahj",
++#        "Perm",
++#        "Shaw",
++#    }
++#    assert unicodedata.script_extension("\u02BC") == {
++#        "Beng",
++#        "Cyrl",
++#        "Deva",
++#        "Latn",
++#        "Lisu",
++#        "Thai",
++#        "Toto",
++#    }
+     assert unicodedata.script_extension("a") == {"Latn"}
+     assert unicodedata.script_extension(chr(0)) == {"Zyyy"}
+     assert unicodedata.script_extension(chr(0x0378)) == {"Zzzz"}
